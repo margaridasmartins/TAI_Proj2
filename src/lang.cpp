@@ -23,7 +23,7 @@ int main(int argc, char *argv[]){
     char filename_r[100];
     char filename_t[100];
     sprintf(filename_r, "%s", argv[1]);
-    sprintf(filename_t, "%s", argv[1]);
+    sprintf(filename_t, "%s", argv[2]);
     k = atoi(argv[3]);
     a = atof(argv[4]);
 
@@ -42,8 +42,9 @@ int main(int argc, char *argv[]){
 
     FCM *fcm = new FCM(k);
     fcm->train(fptr, 0);
-    printf("%d",get_numbits(fcm, fptr_t, k, a));
+    printf("%f\n",get_numbits(fcm, fptr_t, k, a));
     fclose(fptr);
+    fclose(fptr_t);;
 
     return 0;
 }
