@@ -1,48 +1,82 @@
+#include <dirent.h>
+#include <stdio.h>
+
+#include <limits>
+#include <string>
+
 #include "lang.hpp"
 
-int main(int argc, char *argv[]){
-    string help_text =
+using namespace std;
+
+int main(int argc, char *argv[]) {
+  string help_text =
       "Usage:\n"
-      "  ./findlang filename_r filename_t context_size alpha \n"
+      "  ./lang filename_t context_size alpha \n"
       "Required:\n"
-      "  filename_r       The name of the file with a text representing the class r i\n"
       "  filename_t       The name of the file with the text under analysis\n"
-      "  context_size   The size of the context which translates into the order of the model\n"
+      "  context_size   The size of the context which translates into the "
+      "order of the model\n"
       "  alpha          The value for the smoothing parameter\n"
       "Example:\n"
-      "  ./findlang ?? ?? 2 0.5\n";
+      "  ./lang ?? 2 0.5\n";
 
-    if (argc < 5) {
-      printf("ERR: Incorrect number of arguments\n\n%s", help_text.c_str());
-      exit(1);
-    }
-    
-    uint k;
-    float a;
-    char filename_r[100];
-    char filename_t[100];
-    sprintf(filename_r, "%s", argv[1]);
-    sprintf(filename_t, "%s", argv[1]);
-    k = atoi(argv[3]);
-    a = atof(argv[4]);
+  if (argc < 4) {
+    printf("ERR: Incorrect number of arguments\n\n%s", help_text.c_str());
+    exit(1);
+  }
 
-    FILE *fptr;
+  uint k;
+  float a;
+  char filename_t[100];
+  sprintf(filename_t, "%s", argv[1]);
+  k = atoi(argv[2]);
+  a = atof(argv[3]);
 
-    if ((fptr = fopen(filename_r, "r")) == NULL) {
-        printf("ERR: File \"%s\" not found\n", filename_r);
-        exit(2);
-    }
+  FILE *fptr_t;
+  if ((fptr_t = fopen(filename_t, "r")) == NULL) {
+    printf("ERR: File \"%s\" not found\n", filename_t);
+    exit(2);
+  }
 
-    FILE *fptr_t;
-    if ((fptr_t = fopen(filename_t, "r")) == NULL) {
+  struct dirent *entry;
+  DIR *dp;
+
+  dp = opendir("../models-tiny");
+  if (dp == NULL) {
+    perror("opendir: Path does not exist or could not be read.");
+    return -1;
+  }
+
+  double min_entropy = std::numeric_limits<double>::infinity();
+  string lang;
+  string s;
+
+  while ((entry = readdir(dp))) {
+    if (entry->d_name[0] != '.') {
+      FILE *fptr;
+      s = entry->d_name;
+      char filename[100];
+      sprintf(filename, "../models-tiny/%s", s.c_str());
+
+      if ((fptr = fopen(filename, "r")) == NULL) {
         printf("ERR: File \"%s\" not found\n", filename_t);
         exit(2);
+      }
+      FCM *fcm = new FCM(k);
+      fcm->train(fptr, 0);
+      double nbits = get_numbits(fcm, fptr_t, k, 0.001);
+      if (nbits < min_entropy) {
+        min_entropy = nbits;
+        
+        lang = s.substr(0, s.find("."));
+      }
+      rewind(fptr_t);
+      fclose(fptr);
     }
+  }
+  fclose(fptr_t);
+  closedir(dp);
+  printf("%s: %f avg bits\n", lang.c_str(), min_entropy);
 
-    FCM *fcm = new FCM(k);
-    fcm->train(fptr, 0);
-    printf("%d",get_numbits(fcm, fptr_t, k, a));
-    fclose(fptr);
-
-    return 0;
+  return 0;
 }
