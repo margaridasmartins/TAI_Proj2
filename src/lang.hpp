@@ -46,6 +46,7 @@ void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k) {
   string last_lang;
   string lang;
   uint buffer;
+  bool first_position=1;
   char context[k];
   uint char_count;  
 
@@ -65,15 +66,21 @@ void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k) {
       }
     }
     if (lang.compare(last_lang) != 0) {
-          buffer = 0;
-          last_lang=lang;
+      buffer = 0;
+      last_lang=lang;
     }
     if (current_lang.compare(lang) != 0) {
       buffer++;
-      if (buffer == 10) {
+      if(buffer == 10 && first_position){
+        printf("%s: %d\n", lang.c_str(), 0);
         current_lang = lang;
-        buffer = 0;
+        first_position=0;
+        buffer=0;
+      }
+      else if (buffer == 10) {
+        current_lang = lang;
         printf("%s: %d\n", current_lang.c_str(), char_count - buffer);
+        buffer = 0;
       }
     }
 
