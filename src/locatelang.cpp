@@ -29,8 +29,8 @@ int main(int argc, char *argv[]) {
   float a;
   char models_dir[100];
   char filename_t[100];
-  sprintf(models_dir, "%s", argv[1]);
-  sprintf(filename_t, "%s", argv[2]);
+  sprintf(models_dir, "../%s", argv[1]);
+  sprintf(filename_t, "../tests/%s", argv[2]);
   a = atof(argv[3]);
 
   
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     perror("opendir: Path does not exist or could not be read.");
     return -1;
   }
-  double min_entropy = std::numeric_limits<double>::infinity();
+  
   string lang;
   string s;
   list<lang_FCM> lang_fcm;

@@ -21,8 +21,10 @@ int main(int argc, char *argv[]) {
 
   uint k;
   float a;
+  char models_dir[100];
   char filename_t[100];
-  sprintf(filename_t, "%s", argv[2]);
+  sprintf(models_dir, "../%s", argv[1]);
+  sprintf(filename_t, "../tests/%s", argv[2]);
   k = atoi(argv[3]);
   a = atof(argv[4]);
 
@@ -35,7 +37,7 @@ int main(int argc, char *argv[]) {
   struct dirent *entry;
   DIR *dp;
 
-  dp = opendir(argv[1]);
+  dp = opendir(models_dir);
   if (dp == NULL) {
     perror("opendir: Path does not exist or could not be read.");
     return -1;
@@ -50,7 +52,7 @@ int main(int argc, char *argv[]) {
       FILE *fptr;
       s = entry->d_name;
       char filename[100];
-      sprintf(filename, "%s/%s", argv[1], s.c_str());
+      sprintf(filename, "%s/%s", models_dir, s.c_str());
 
       if ((fptr = fopen(filename, "r")) == NULL) {
         printf("ERR: File \"%s\" not found\n", filename);
@@ -58,7 +60,7 @@ int main(int argc, char *argv[]) {
       }
       FCM *fcm = new FCM(k);
       fcm->train(fptr, 0);
-      double nbits = get_numbits(fcm, fptr_t, k, 0.001);
+      double nbits = get_numbits(fcm, fptr_t, k, a);
       if (nbits < min_entropy) {
         min_entropy = nbits;
         
