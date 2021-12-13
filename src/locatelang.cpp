@@ -15,6 +15,8 @@ int main(int argc, char *argv[]) {
       "  context_size   The size of the context which translates into the "
       "order of the model\n"
       "  alpha          The value for the smoothing parameter\n"
+      "Options:\n"
+      "  -b           The value of buffer size for switching to another language\n"
       "Example:\n"
       "  ./locatelang ?? ?? 2 0.5\n";
 
@@ -67,7 +69,27 @@ int main(int argc, char *argv[]) {
       fclose(fptr);
     }
   }
-  locatelang(lang_fcm, fptr_t, a, k);
+  uint b = 10; // default buffer
+  int option, option_index = 0;
+  static struct option long_options[] = {{"buffer", required_argument, 0, 'b'},
+                                         {"help", no_argument, 0, 'h'},
+                                         {0, 0, 0, 0}};
+
+  while ((option = getopt_long(argc, argv, "bh", long_options,
+                               &option_index)) != -1) {
+    switch (option) {
+      case 'b':
+        b=atoi(argv[optind]);
+        break;
+      case 'h':
+        printf("%s", help_text.c_str());
+        exit(0);
+      default:
+        abort();
+    }
+  }
+  
+  locatelang(lang_fcm, fptr_t, a, k, b);
   closedir(dp);
   fclose(fptr_t);
 

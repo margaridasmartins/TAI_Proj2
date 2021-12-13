@@ -9,8 +9,7 @@ int main(int argc, char *argv[]) {
       "Required:\n"
       "  models_dir     The name of the directory with the language models"
       "  filename_t       The name of the file with the text under analysis\n"
-      "  context_size   The size of the context which translates into the "
-      "order of the model\n"
+      "  context_size   The size of the context which translates into the order of the model\n"
       "  alpha          The value for the smoothing parameter\n"
       "Example:\n"
       "  ./lang ?? 2 0.5\n";

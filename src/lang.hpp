@@ -9,9 +9,7 @@
 #include "fcm.hpp"
 
 struct lang_FCM {
-  FCM *fcm1;
-  FCM *fcm2;
-  FCM *fcm5;
+  FCM *fcm;
   string lang;
 };
 
@@ -55,7 +53,7 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   return (double)bits / l;
 }
 
-void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k) {
+void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k, uint buffer_size ) {
   double bits = 0;
   double min_bits = 1000;
   string current_lang;
@@ -88,13 +86,13 @@ void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k) {
     }
     if (current_lang.compare(lang) != 0) {
       buffer++;
-      if(buffer == 10 && first_position){
+      if(buffer == buffer_size && first_position){
         printf("%s: %d\n", lang.c_str(), 0);
         current_lang = lang;
         first_position=0;
         buffer=0;
       }
-      else if (buffer == 10) {
+      else if (buffer == buffer_size) {
         current_lang = lang;
         printf("%s: %d\n", current_lang.c_str(), char_count - buffer);
         buffer = 0;
