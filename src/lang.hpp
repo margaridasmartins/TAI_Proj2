@@ -9,6 +9,13 @@
 #include "fcm.hpp"
 
 struct lang_FCM {
+  FCM *fcm1;
+  FCM *fcm2;
+  FCM *fcm3;
+  string lang;
+};
+
+struct lang_k{
   FCM *fcm;
   string lang;
 };
@@ -53,7 +60,69 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   return (double)bits / l;
 }
 
-void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k, uint buffer_size ) {
+void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint buffer_size ) {
+  double bits = 0;
+  double min_bits = 1000;
+  uint max_k=5;
+  string current_lang;
+  string last_lang;
+  string lang;
+  uint buffer;
+  bool first_position=1;
+  char context[max_k];
+  uint char_count; 
+  uint symbols_size = check_alphabet(fptr); 
+
+  // first k letters
+  fgets(context, max_k + 1, fptr);
+  char_count = max_k;
+
+  // k+1 letter
+  char next_char = fgetc(fptr);
+  do {
+    min_bits = 10000;
+    for (auto v : lang_list) {
+      bits=0;
+      bits += .4*v.fcm3->letter_entropy(context, next_char, a, symbols_size);
+      bits += .4*v.fcm2->letter_entropy((context+3), next_char, a, symbols_size);
+      bits += .2*v.fcm1->letter_entropy((context+4), next_char, a, symbols_size);
+      if (bits < min_bits) {
+        min_bits = bits;
+        lang = v.lang;
+      }
+    }
+    if (lang.compare(last_lang) != 0) {
+      buffer = 0;
+      last_lang=lang;
+    }
+    if (current_lang.compare(lang) != 0) {
+      buffer++;
+      if(buffer == buffer_size && first_position){
+        printf("%s: %d\n", lang.c_str(), 0);
+        current_lang = lang;
+        first_position=0;
+        buffer=0;
+      }
+      else if (buffer == buffer_size) {
+        current_lang = lang;
+        printf("%s: %d\n", current_lang.c_str(), char_count - buffer);
+        buffer = 0;
+      }
+    }
+
+    char_count++;
+    // slide one
+    for (uint i = 0; i < max_k - 1; i++) {
+      context[i] = context[i + 1];
+    }
+    context[max_k - 1] = next_char;
+
+    next_char = fgetc(fptr);
+
+  } while (next_char != EOF);
+}
+
+void locatelang_k(list<lang_k> lang_list, FILE *fptr, float a, uint k, uint buffer_size ) {
   double bits = 0;
   double min_bits = 1000;
   string current_lang;
@@ -74,7 +143,8 @@ void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k, uint buff
   do {
     min_bits = 1000;
     for (auto v : lang_list) {
-      bits = v.fcm->letter_entropy(context, next_char, a, symbols_size);
+      bits=0;
+      bits += v.fcm->letter_entropy(context, next_char, a, symbols_size);
       if (bits < min_bits) {
         min_bits = bits;
         lang = v.lang;

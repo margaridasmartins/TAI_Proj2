@@ -12,27 +12,28 @@ int main(int argc, char *argv[]) {
       "Required:\n"
       "  models_dir       The name of the directory with the language files\n"
       "  filename_t       The name of the file with the text under analysis\n"
-      "  context_size   The size of the context which translates into the "
       "order of the model\n"
       "  alpha          The value for the smoothing parameter\n"
       "Options:\n"
       "  -b           The value of buffer size for switching to another language\n"
+      "  -k              Only use one context size "
       "Example:\n"
       "  ./locatelang ?? ?? 2 0.5\n";
 
-  if (argc < 5) {
+  if (argc < 4) {
     printf("ERR: Incorrect number of arguments\n\n%s", help_text.c_str());
     exit(1);
   }
 
-  uint k;
+  uint k=0;
   float a;
   char models_dir[100];
   char filename_t[100];
   sprintf(models_dir, "%s", argv[1]);
   sprintf(filename_t, "%s", argv[2]);
-  k = atoi(argv[3]);
-  a = atof(argv[4]);
+  a = atof(argv[3]);
+
+  
 
   FILE *fptr_t;
   if ((fptr_t = fopen(filename_t, "r")) == NULL) {
@@ -51,6 +52,31 @@ int main(int argc, char *argv[]) {
   string lang;
   string s;
   list<lang_FCM> lang_fcm;
+  list<lang_k> lang_k;
+
+  uint b = 10; // default buffer
+  int option, option_index = 0;
+  static struct option long_options[] = {{"buffer", required_argument, 0, 'b'},
+                                         {"help", no_argument, 0, 'h'},
+                                         {"context_size", required_argument, 0, 'k'},
+                                         {0, 0, 0, 0}};
+
+  while ((option = getopt_long(argc, argv, "bhk", long_options,
+                               &option_index)) != -1) {
+    switch (option) {
+      case 'b':
+        b=atoi(argv[optind]);
+        break;
+      case 'h':
+        printf("%s", help_text.c_str());
+        exit(0);
+      case 'k':
+        k = atoi(argv[optind]);
+        break;
+      default:
+        abort();
+    }
+  }
 
   while ((entry = readdir(dp))) {
     if (entry->d_name[0] != '.') {
@@ -63,33 +89,32 @@ int main(int argc, char *argv[]) {
         printf("ERR: File \"%s\" not found\n", filename);
         exit(2);
       }
-      FCM *fcm = new FCM(k);
-      fcm->train(fptr, a);
-      lang_fcm.push_back({fcm, s});
-      fclose(fptr);
-    }
-  }
-  uint b = 10; // default buffer
-  int option, option_index = 0;
-  static struct option long_options[] = {{"buffer", required_argument, 0, 'b'},
-                                         {"help", no_argument, 0, 'h'},
-                                         {0, 0, 0, 0}};
-
-  while ((option = getopt_long(argc, argv, "bh", long_options,
-                               &option_index)) != -1) {
-    switch (option) {
-      case 'b':
-        b=atoi(argv[optind]);
-        break;
-      case 'h':
-        printf("%s", help_text.c_str());
-        exit(0);
-      default:
-        abort();
+      if(k==0){
+        
+        FCM *fcm1 = new FCM(1);
+        FCM *fcm2 = new FCM(2);
+        FCM *fcm3 = new FCM(5);
+        fcm1->train(fptr, a);
+        fcm2->train(fptr, a);
+        fcm3->train(fptr, a);
+        lang_fcm.push_back({fcm1, fcm2, fcm3, s});
+        fclose(fptr);
+      }else{
+        FCM *fcm = new FCM(k);
+        fcm->train(fptr, a);
+        lang_k.push_back({fcm, s});
+        fclose(fptr);
+      }
+      
     }
   }
   
-  locatelang(lang_fcm, fptr_t, a, k, b);
+  if(k==0){
+    locatelang(lang_fcm, fptr_t, a, b);
+  }else{
+    locatelang_k(lang_k,fptr_t, a, k, b);
+  }
+  
   closedir(dp);
   fclose(fptr_t);
 
