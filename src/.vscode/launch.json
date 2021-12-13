@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [
+        "../models-tiny","../tests/por.txt", "5" , "0.01" ,"-b 1"
+      ],
+      "stopAtEntry": false,
+      "cwd": "/media/guids/Hdd/TAI/TAI_Proj2/src",
+      "environment": [],
+      "program": "/media/guids/Hdd/TAI/TAI_Proj2/bin/locatelang",
+      "internalConsoleOptions": "openOnSessionStart",
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "externalConsole": false,
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
