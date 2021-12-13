@@ -33,9 +33,9 @@ class Table {
 
  public:
   Table(uint k, map<char, uint> symbols);
-
+  virtual uint getSymbolsSize()=0;
   virtual void train(FILE *fptr) = 0;
-  virtual double letter_entropy(char *context, char letter, float a) = 0;
+  virtual double letter_entropy(char *context, char letter, float a, uint symbols_size) = 0;
   virtual double get_entropy(float a) = 0;
   virtual void generate_text(float a, char prior[], uint text_size,
                              bool relative_random, bool show_random) = 0;
@@ -48,9 +48,9 @@ class TableHash : public Table {
 
  public:
   TableHash(uint k, map<char, uint> symbols);
-
+  uint getSymbolsSize();
   void train(FILE *fptr);
-  double letter_entropy(char *context, char letter, float a);
+  double letter_entropy(char *context, char letter, float a, uint simbols_size);
   double get_entropy(float a);
   void generate_text(float a, char prior[], uint text_size,
                      bool relative_random, bool show_random);
@@ -67,9 +67,10 @@ class FCM {
  public:
   FCM(uint k);
 
+  uint getSymbolSize();
   void train(FILE *fptr, float threshold);
   double get_entropy(float a);
-  double letter_entropy(char *context, char letter, float a);
+  double letter_entropy(char *context, char letter, float a, uint simbols_size);
   void generate_text(float a, char prior[], uint text_size,
                      bool relative_random, bool show_random);
   void print_table();
@@ -121,6 +122,7 @@ void TableHash::train(FILE *fptr) {
     next_char = fgetc(fptr);
 
   } while (next_char != EOF);
+  rewind(fptr);
 }
 
 void TableHash::print() {
@@ -157,7 +159,11 @@ void TableHash::print() {
   }
 }
 
-double TableHash::letter_entropy(char *context, char letter, float a) {
+uint TableHash::getSymbolsSize(){
+  return symbols.size();
+}
+
+double TableHash::letter_entropy(char *context, char letter, float a, uint symbols_size) {
   double prob = 0;
   auto it = table.find(context);
 
@@ -165,12 +171,12 @@ double TableHash::letter_entropy(char *context, char letter, float a) {
     auto it2 = (*it).second.occorrencies.find(letter);
 
     if (it2 != (*it).second.occorrencies.end()) {
-      prob = (double)((*it2).second + a) / ((*it).second.sum + a * symbols.size());
+      prob = (double)((*it2).second + a) / ((*it).second.sum + a * symbols_size);
     } else {
-      prob = (double)(a) / ((*it).second.sum + a * symbols.size());
+      prob = (double)(a) / ((*it).second.sum + a * symbols_size);
     }
   } else {
-    prob = (double)1 / symbols.size();
+    prob = (double)1 / symbols_size;
   }
 
   return -log2(prob);
@@ -313,10 +319,10 @@ void FCM::train(FILE *fptr, float threshold = 0) {
   table = new TableHash(k, symbols);
   table->train(fptr);
 }
-
+uint FCM::getSymbolSize(){return table->getSymbolsSize();};
 double FCM::get_entropy(float a) { return table->get_entropy(a); }
-double FCM::letter_entropy(char context[], char next_char, float a) {
-  return table->letter_entropy(context, next_char, a);
+double FCM::letter_entropy(char context[], char next_char, float a, uint size) {
+  return table->letter_entropy(context, next_char, a, size);
 }
 void FCM::print_table() { table->print(); }
 

@@ -1,6 +1,7 @@
 #include <dirent.h>
 #include <stdio.h>
 
+#include <set>
 #include <limits>
 #include <list>
 #include <string>
@@ -8,9 +9,24 @@
 #include "fcm.hpp"
 
 struct lang_FCM {
-  FCM *fcm;
+  FCM *fcm1;
+  FCM *fcm2;
+  FCM *fcm5;
   string lang;
 };
+
+uint check_alphabet(FILE *fptr){
+  set<char> alpha;
+  char c = fgetc(fptr);
+  do {
+    if (alpha.find(c) == alpha.end()) {
+      alpha.insert(c);
+    }
+    c = fgetc(fptr);
+  } while (c != EOF);
+  rewind(fptr);
+  return alpha.size();
+}
 
 double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   double bits = 0;
@@ -24,7 +40,7 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   char next_char = fgetc(fptr_t);
   do {
     l++;
-    bits += fcm->letter_entropy(context, next_char, a);
+    bits += fcm->letter_entropy(context, next_char, a, fcm->getSymbolSize());
 
     // slide one
     for (uint i = 0; i < k - 1; i++) {
@@ -48,7 +64,8 @@ void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k) {
   uint buffer;
   bool first_position=1;
   char context[k];
-  uint char_count;  
+  uint char_count; 
+  uint symbols_size = check_alphabet(fptr); 
 
   // first k letters
   fgets(context, k + 1, fptr);
@@ -59,7 +76,7 @@ void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint k) {
   do {
     min_bits = 1000;
     for (auto v : lang_list) {
-      bits = v.fcm->letter_entropy(context, next_char, a);
+      bits = v.fcm->letter_entropy(context, next_char, a, symbols_size);
       if (bits < min_bits) {
         min_bits = bits;
         lang = v.lang;
