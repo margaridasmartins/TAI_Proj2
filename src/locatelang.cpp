@@ -3,6 +3,40 @@
 #include "fcm.hpp"
 #include "lang.hpp"
 
+void pprint(FILE *fptr_t, vector<lang_location> locations) {
+  rewind(fptr_t);
+
+  if (locations.empty()) {
+    // no specific language found
+    printf("\u001b[34;1m<unknown:\u001b[0m");
+  }
+
+  for (uint i = 0; i < locations.size(); i++) {
+    auto curr = locations[i];
+    string lang = curr.lang;
+
+    printf("\u001b[34;1m<%s:\u001b[0m", lang.c_str());
+
+    if (i + 1 < locations.size()) {
+      uint buffer = locations[i + 1].location - curr.location;
+      char stream[buffer];
+      fread(stream, sizeof(char), buffer, fptr_t);
+      stream[buffer] = 0;
+
+      printf("%s", stream);
+      printf("\u001b[34;1m>\u001b[0m");
+    }
+  }
+  // read rest of the file
+  char next_char = fgetc(fptr_t);
+  do {
+    printf("%c", next_char);
+    next_char = fgetc(fptr_t);
+  } while (next_char != EOF);
+
+  printf("\u001b[34;1m>\u001b[0m\n");
+}
+
 int main(int argc, char *argv[]) {
   string help_text =
       "Usage:\n"
@@ -30,8 +64,6 @@ int main(int argc, char *argv[]) {
   sprintf(models_dir, "../%s", argv[1]);
   sprintf(filename_t, "../tests/%s", argv[2]);
   a = atof(argv[3]);
-
-  
 
   FILE *fptr_t;
   if ((fptr_t = fopen(filename_t, "r")) == NULL) {
@@ -115,7 +147,9 @@ int main(int argc, char *argv[]) {
   } else {
     locations = locatelang_k(lang_k, fptr_t, a, k, b);
   }
-  
+
+  pprint(fptr_t, locations);
+
   closedir(dp);
   fclose(fptr_t);
 
