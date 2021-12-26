@@ -294,7 +294,7 @@ void TableHash::generate_text(float a, char *prior, uint text_size,
 
 FCM::FCM(uint k) { this->k = k; }
 
-void FCM::train(FILE *fptr, float threshold = 0) {
+void FCM::train(FILE *fptr, float threshold = 0) { // FIXME: threshold not being used 
   rewind(fptr);  // move the file pointer back to the start of the file
   symbols.clear();
   alphabet.clear();
@@ -311,11 +311,6 @@ void FCM::train(FILE *fptr, float threshold = 0) {
     c = fgetc(fptr);
   } while (c != EOF);
 
-  // Calculate theorical size of 2D array
-  double tablesize = (pow(symbols.size(), k + 1)) * 16 / 8 / 1024 / 1024;
-  printf("Theoretical size of 2D array: %f MB\n", tablesize);
-
-  printf("Creating hash table...\n");
   table = new TableHash(k, symbols);
   table->train(fptr);
 }

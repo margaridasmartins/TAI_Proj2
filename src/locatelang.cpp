@@ -1,7 +1,5 @@
 #include <dirent.h>
 
-#include <list>
-
 #include "fcm.hpp"
 #include "lang.hpp"
 
@@ -25,7 +23,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  uint k=0;
+  uint k = 0;
   float a;
   char models_dir[100];
   char filename_t[100];
@@ -48,24 +46,25 @@ int main(int argc, char *argv[]) {
     perror("opendir: Path does not exist or could not be read.");
     return -1;
   }
-  
+
   string lang;
   string s;
   list<lang_FCM> lang_fcm;
   list<lang_k> lang_k;
 
-  uint b = 10; // default buffer
+  uint b = 10;  // default buffer
   int option, option_index = 0;
-  static struct option long_options[] = {{"buffer", required_argument, 0, 'b'},
-                                         {"help", no_argument, 0, 'h'},
-                                         {"context_size", required_argument, 0, 'k'},
-                                         {0, 0, 0, 0}};
+  static struct option long_options[] = {
+      {"buffer", required_argument, 0, 'b'},
+      {"help", no_argument, 0, 'h'},
+      {"context_size", required_argument, 0, 'k'},
+      {0, 0, 0, 0}};
 
   while ((option = getopt_long(argc, argv, "bhk", long_options,
                                &option_index)) != -1) {
     switch (option) {
       case 'b':
-        b=atoi(argv[optind]);
+        b = atoi(argv[optind]);
         break;
       case 'h':
         printf("%s", help_text.c_str());
@@ -82,37 +81,39 @@ int main(int argc, char *argv[]) {
     if (entry->d_name[0] != '.') {
       FILE *fptr;
       s = entry->d_name;
+      string lang = s.substr(0, s.find("."));
       char filename[100];
-      sprintf(filename, "%s/%s",models_dir, s.c_str());
+      sprintf(filename, "%s/%s", ((string)models_dir).c_str(), s.c_str());
 
       if ((fptr = fopen(filename, "r")) == NULL) {
         printf("ERR: File \"%s\" not found\n", filename);
         exit(2);
       }
-      if(k==0){
-        
+      
+      if (k == 0) {
         FCM *fcm1 = new FCM(1);
         FCM *fcm2 = new FCM(2);
         FCM *fcm3 = new FCM(5);
         fcm1->train(fptr, a);
         fcm2->train(fptr, a);
         fcm3->train(fptr, a);
-        lang_fcm.push_back({fcm1, fcm2, fcm3, s});
+        lang_fcm.push_back({fcm1, fcm2, fcm3, lang});
         fclose(fptr);
-      }else{
+      } else {
         FCM *fcm = new FCM(k);
         fcm->train(fptr, a);
-        lang_k.push_back({fcm, s});
+        lang_k.push_back({fcm, lang});
         fclose(fptr);
       }
-      
     }
   }
-  
-  if(k==0){
-    locatelang(lang_fcm, fptr_t, a, b);
-  }else{
-    locatelang_k(lang_k,fptr_t, a, k, b);
+
+  vector<lang_location> locations;
+
+  if (k == 0) {
+    locations = locatelang(lang_fcm, fptr_t, a, b);
+  } else {
+    locations = locatelang_k(lang_k, fptr_t, a, k, b);
   }
   
   closedir(dp);
