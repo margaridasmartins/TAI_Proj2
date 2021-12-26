@@ -22,8 +22,8 @@ int main(int argc, char *argv[]) {
   float a;
   char models_dir[100];
   char filename_t[100];
-  sprintf(models_dir, "../%s", argv[1]);
-  sprintf(filename_t, "../tests/%s", argv[2]);
+  sprintf(models_dir, "%s", argv[1]);
+  sprintf(filename_t, "%s", argv[2]);
   k = atoi(argv[3]);
   a = atof(argv[4]);
 

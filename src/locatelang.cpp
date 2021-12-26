@@ -3,7 +3,7 @@
 #include "fcm.hpp"
 #include "lang.hpp"
 
-void pprint(FILE *fptr_t, vector<lang_location> locations) {
+void pprint(FILE *fptr_t, const vector<lang_location> locations) {
   rewind(fptr_t);
 
   if (locations.empty()) {
@@ -19,8 +19,8 @@ void pprint(FILE *fptr_t, vector<lang_location> locations) {
 
     if (i + 1 < locations.size()) {
       uint buffer = locations[i + 1].location - curr.location;
-      char stream[buffer];
-      fread(stream, sizeof(char), buffer, fptr_t);
+      char stream[buffer + 1];
+      fread(stream, 1, buffer, fptr_t);
       stream[buffer] = 0;
 
       printf("%s", stream);
@@ -47,7 +47,8 @@ int main(int argc, char *argv[]) {
       "order of the model\n"
       "  alpha          The value for the smoothing parameter\n"
       "Options:\n"
-      "  -b           The value of buffer size for switching to another language\n"
+      "  -b           The value of buffer size for switching to another "
+      "language\n"
       "  -k              Only use one context size "
       "Example:\n"
       "  ./locatelang ?? ?? 2 0.5\n";
@@ -61,8 +62,8 @@ int main(int argc, char *argv[]) {
   float a;
   char models_dir[100];
   char filename_t[100];
-  sprintf(models_dir, "../%s", argv[1]);
-  sprintf(filename_t, "../tests/%s", argv[2]);
+  sprintf(models_dir, "%s", argv[1]);
+  sprintf(filename_t, "%s", argv[2]);
   a = atof(argv[3]);
 
   FILE *fptr_t;
@@ -121,7 +122,7 @@ int main(int argc, char *argv[]) {
         printf("ERR: File \"%s\" not found\n", filename);
         exit(2);
       }
-      
+
       if (k == 0) {
         FCM *fcm1 = new FCM(1);
         FCM *fcm2 = new FCM(2);

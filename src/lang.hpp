@@ -66,8 +66,8 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   return (double)bits / l;
 }
 
-vector<lang_location> locatelang(list<lang_FCM> lang_list, FILE *fptr, float a,
-                               uint buffer_size) {
+vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
+                                 float a, uint buffer_size) {
   uint max_k = 5;
   char context[max_k];
 
@@ -135,8 +135,8 @@ vector<lang_location> locatelang(list<lang_FCM> lang_list, FILE *fptr, float a,
   return locations;
 }
 
-vector<lang_location> locatelang_k(list<lang_k> lang_list, FILE *fptr, float a,
-                                 uint k, uint buffer_size) {
+vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr, float a,
+                                   uint k, uint buffer_size) {
   char context[k];
 
   double min_bits, bits;
