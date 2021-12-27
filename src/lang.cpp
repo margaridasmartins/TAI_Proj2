@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
 
     FCM *fcm = new FCM(k);
     fcm->train(fptr, 0);
-    printf("%f\n",get_numbits(fcm, fptr_t, k, a));
+    printf("%f\n",get_numbits(fcm, fptr_t, k, a, fcm->getSymbolSize()));
     fclose(fptr);
     fclose(fptr_t);;
 

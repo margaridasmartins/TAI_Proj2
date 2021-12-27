@@ -1,6 +1,5 @@
 #include "lang.hpp"
-
-using namespace std;
+#include <bits/stdc++.h>
 
 int main(int argc, char *argv[]) {
   string help_text =
@@ -24,7 +23,7 @@ int main(int argc, char *argv[]) {
   char models_dir[100];
   char filename_t[100];
   sprintf(models_dir, "../%s", argv[1]);
-  sprintf(filename_t, "../tests/%s", argv[2]);
+  sprintf(filename_t, "../%s", argv[2]);
   k = atoi(argv[3]);
   a = atof(argv[4]);
 
@@ -33,7 +32,7 @@ int main(int argc, char *argv[]) {
     printf("ERR: File \"%s\" not found\n", filename_t);
     exit(2);
   }
-
+  uint symbol_size= check_alphabet(fptr_t);
   struct dirent *entry;
   DIR *dp;
 
@@ -43,36 +42,46 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  double min_entropy = std::numeric_limits<double>::infinity();
-  string lang;
+  vector<pair<double, string>> langs;
   string s;
 
   while ((entry = readdir(dp))) {
     if (entry->d_name[0] != '.') {
       FILE *fptr;
       s = entry->d_name;
+      string lang = s.substr(0, s.find("."));
       char filename[100];
-      sprintf(filename, "%s/%s", models_dir, s.c_str());
+
+      sprintf(filename, "%s/%s", ((string)models_dir).c_str(), s.c_str());
 
       if ((fptr = fopen(filename, "r")) == NULL) {
         printf("ERR: File \"%s\" not found\n", filename);
         exit(2);
       }
+
       FCM *fcm = new FCM(k);
-      fcm->train(fptr, 0);
-      double nbits = get_numbits(fcm, fptr_t, k, a);
-      if (nbits < min_entropy) {
-        min_entropy = nbits;
-        
-        lang = s.substr(0, s.find("."));
-      }
+
+      fcm->train(fptr, a);
+
+      printf("Trained %s model with \t %f entropy\n", lang.c_str(), fcm->get_entropy(a));
+
+      double nbits = get_numbits(fcm, fptr_t, k, a, symbol_size);
+
+      langs.push_back({nbits, lang});
+
       rewind(fptr_t);
       fclose(fptr);
     }
   }
   fclose(fptr_t);
   closedir(dp);
-  printf("%s: %f avg bits\n", lang.c_str(), min_entropy);
+
+  sort(langs.begin(), langs.end());
+
+  printf("Top 5 nearest languages:\n");
+  for (auto it = langs.begin(); it != langs.begin() + 5; ++it) {
+    printf("%20s: \t %f avg bits\n", it->second.c_str(), it->first);
+  }
 
   return 0;
 }

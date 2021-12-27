@@ -1,10 +1,11 @@
 #include <dirent.h>
 #include <stdio.h>
 
-#include <set>
 #include <limits>
 #include <list>
+#include <set>
 #include <string>
+#include <vector>
 
 #include "fcm.hpp"
 
@@ -15,12 +16,17 @@ struct lang_FCM {
   string lang;
 };
 
-struct lang_k{
+struct lang_k {
   FCM *fcm;
   string lang;
 };
 
-uint check_alphabet(FILE *fptr){
+struct lang_location {
+  uint location;
+  string lang;
+};
+
+uint check_alphabet(FILE *fptr) {
   set<char> alpha;
   char c = fgetc(fptr);
   do {
@@ -33,7 +39,7 @@ uint check_alphabet(FILE *fptr){
   return alpha.size();
 }
 
-double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
+double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a, uint symbol_size) {
   double bits = 0;
   char context[k];
   int l = 0;
@@ -45,7 +51,7 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   char next_char = fgetc(fptr_t);
   do {
     l++;
-    bits += fcm->letter_entropy(context, next_char, a, fcm->getSymbolSize());
+    bits += fcm->letter_entropy(context, next_char, a, symbol_size);
 
     // slide one
     for (uint i = 0; i < k - 1; i++) {
@@ -60,57 +66,62 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   return (double)bits / l;
 }
 
-void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint buffer_size ) {
-  double bits = 0;
-  double min_bits = 1000;
-  uint max_k=5;
-  string current_lang;
-  string last_lang;
-  string lang;
-  uint buffer;
-  bool first_position=1;
+vector<lang_location> locatelang(list<lang_FCM> lang_list, FILE *fptr, float a,
+                               uint buffer_size) {
+  uint max_k = 5;
   char context[max_k];
-  uint char_count; 
-  uint symbols_size = check_alphabet(fptr); 
+
+  double min_bits, bits;
+  string curr_lang, last_lang, lang;
+  vector<lang_location> locations;
+
+  uint buffer = 0;
+  uint char_count = max_k;
+  uint symbols_size = check_alphabet(fptr);
 
   // first k letters
   fgets(context, max_k + 1, fptr);
-  char_count = max_k;
 
   // k+1 letter
   char next_char = fgetc(fptr);
   do {
     min_bits = 10000;
+
     for (auto v : lang_list) {
-      bits=0;
-      bits += .4*v.fcm3->letter_entropy(context, next_char, a, symbols_size);
-      bits += .4*v.fcm2->letter_entropy((context+3), next_char, a, symbols_size);
-      bits += .2*v.fcm1->letter_entropy((context+4), next_char, a, symbols_size);
+      bits = .4 * v.fcm3->letter_entropy(context, next_char, a, symbols_size) +
+             .4 * v.fcm2->letter_entropy((context + 3), next_char, a,
+                                         symbols_size) +
+             .2 * v.fcm1->letter_entropy((context + 4), next_char, a,
+                                         symbols_size);
       if (bits < min_bits) {
         min_bits = bits;
         lang = v.lang;
       }
     }
-    if (lang.compare(last_lang) != 0) {
+
+    buffer++;
+    if (last_lang.compare(lang) != 0) {
+      // reset buffer if last lang is different from this lang
       buffer = 0;
-      last_lang=lang;
-    }
-    if (current_lang.compare(lang) != 0) {
-      buffer++;
-      if(buffer == buffer_size && first_position){
-        printf("%s: %d\n", lang.c_str(), 0);
-        current_lang = lang;
-        first_position=0;
-        buffer=0;
-      }
-      else if (buffer == buffer_size) {
-        current_lang = lang;
-        printf("%s: %d\n", current_lang.c_str(), char_count - buffer);
-        buffer = 0;
-      }
+      last_lang = lang;
     }
 
+    if (curr_lang.compare(lang) != 0 && buffer == buffer_size) {
+      // change current lang to the best lang found buffer_size times
+
+      uint loc = char_count - buffer;
+      if (locations.empty()) {
+        // first time
+        loc = 0;
+      }
+      printf("%s: %d\n", lang.c_str(), loc);
+      locations.push_back({loc, lang});
+
+      curr_lang = lang;
+      buffer = 0;
+    }
     char_count++;
+
     // slide one
     for (uint i = 0; i < max_k - 1; i++) {
       context[i] = context[i + 1];
@@ -120,56 +131,61 @@ void locatelang(list<lang_FCM> lang_list, FILE *fptr, float a, uint buffer_size 
     next_char = fgetc(fptr);
 
   } while (next_char != EOF);
+
+  return locations;
 }
 
-void locatelang_k(list<lang_k> lang_list, FILE *fptr, float a, uint k, uint buffer_size ) {
-  double bits = 0;
-  double min_bits = 1000;
-  string current_lang;
-  string last_lang;
-  string lang;
-  uint buffer;
-  bool first_position=1;
+vector<lang_location> locatelang_k(list<lang_k> lang_list, FILE *fptr, float a,
+                                 uint k, uint buffer_size) {
   char context[k];
-  uint char_count; 
-  uint symbols_size = check_alphabet(fptr); 
+
+  double min_bits, bits;
+  string curr_lang, last_lang, lang;
+  vector<lang_location> locations;
+
+  uint buffer = 0;
+  uint char_count = k;
+  uint symbols_size = check_alphabet(fptr);
 
   // first k letters
   fgets(context, k + 1, fptr);
-  char_count = k + 1;
 
   // k+1 letter
   char next_char = fgetc(fptr);
   do {
-    min_bits = 1000;
+    min_bits = 10000;
+
     for (auto v : lang_list) {
-      bits=0;
-      bits += v.fcm->letter_entropy(context, next_char, a, symbols_size);
+      bits = v.fcm->letter_entropy(context, next_char, a, symbols_size);
       if (bits < min_bits) {
         min_bits = bits;
         lang = v.lang;
       }
     }
-    if (lang.compare(last_lang) != 0) {
+
+    buffer++;
+    if (last_lang.compare(lang) != 0) {
+      // reset buffer if last lang is different from this lang
       buffer = 0;
-      last_lang=lang;
-    }
-    if (current_lang.compare(lang) != 0) {
-      buffer++;
-      if(buffer == buffer_size && first_position){
-        printf("%s: %d\n", lang.c_str(), 0);
-        current_lang = lang;
-        first_position=0;
-        buffer=0;
-      }
-      else if (buffer == buffer_size) {
-        current_lang = lang;
-        printf("%s: %d\n", current_lang.c_str(), char_count - buffer);
-        buffer = 0;
-      }
+      last_lang = lang;
     }
 
+    if (curr_lang.compare(lang) != 0 && buffer == buffer_size) {
+      // change current lang to the best lang found buffer_size times
+
+      uint loc = char_count - buffer;
+      if (locations.empty()) {
+        // first time
+        loc = 0;
+      }
+      printf("%s: %d\n", lang.c_str(), loc);
+      locations.push_back({loc, lang});
+
+      curr_lang = lang;
+      buffer = 0;
+    }
     char_count++;
+
     // slide one
     for (uint i = 0; i < k - 1; i++) {
       context[i] = context[i + 1];
@@ -179,4 +195,6 @@ void locatelang_k(list<lang_k> lang_list, FILE *fptr, float a, uint k, uint buff
     next_char = fgetc(fptr);
 
   } while (next_char != EOF);
+
+  return locations;
 }
