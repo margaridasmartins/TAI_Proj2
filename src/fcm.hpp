@@ -87,9 +87,9 @@ Table::Table(uint k, map<char, uint> symbols) {
 TableHash::TableHash(uint k, map<char, uint> symbols) : Table(k, symbols) {}
 
 void TableHash::train(FILE *fptr) {
+  
   rewind(fptr);
   table.clear();
-
   char context[k];
 
   // first k letters
@@ -316,6 +316,7 @@ void FCM::train(FILE *fptr, float threshold = 0) {
   printf("Theoretical size of 2D array: %f MB\n", tablesize);
 
   printf("Creating hash table...\n");
+
   table = new TableHash(k, symbols);
   table->train(fptr);
 }

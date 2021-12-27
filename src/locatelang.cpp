@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
       "Required:\n"
       "  models_dir       The name of the directory with the language files\n"
       "  filename_t       The name of the file with the text under analysis\n"
-      "order of the model\n"
+      "  context_size     order of the model\n"
       "  alpha          The value for the smoothing parameter\n"
       "Options:\n"
       "  -b           The value of buffer size for switching to another language\n"
