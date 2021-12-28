@@ -43,7 +43,7 @@ uint check_alphabet(FILE *fptr) {
   return alpha.size();
 }
 
-double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
+double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a, uint symbol_size) {
   double bits = 0;
   char context[k];
   int l = 0;
@@ -55,7 +55,7 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a) {
   char next_char = fgetc(fptr_t);
   do {
     l++;
-    bits += fcm->letter_entropy(context, next_char, a, fcm->getSymbolSize());
+    bits += fcm->letter_entropy(context, next_char, a, symbol_size);
 
     // slide one
     for (uint i = 0; i < k - 1; i++) {

@@ -87,9 +87,9 @@ Table::Table(uint k, map<char, uint> symbols) {
 TableHash::TableHash(uint k, map<char, uint> symbols) : Table(k, symbols) {}
 
 void TableHash::train(FILE *fptr) {
+  
   rewind(fptr);
   table.clear();
-
   char context[k];
 
   // first k letters
