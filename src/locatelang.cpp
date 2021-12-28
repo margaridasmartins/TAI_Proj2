@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
   struct dirent *entry;
   DIR *dp = opendir(models_dir);
   if (dp == NULL) {
-    perror("opendir: Path does not exist or could not be read.");
+    fprintf(stderr, "ERR: Path \"%s\" does not exist or could not be read\n", models_dir);
     return -1;
   }
 
@@ -255,26 +255,6 @@ int main(int argc, char *argv[]) {
   } else {
     locations = locatelang_k(lang_k, fptr_t, a, k, b);
   }
-
-  // if (show_accuracy) {
-  //   uint total_chars = ftell(fptr_t) - 3, wrong_chars = 0;
-  //   auto it = locations.rbegin(), rit = real_locations.rbegin();
-
-  //   while (it != locations.rend() || rit != real_locations.rend()) {
-  //     if (it->lang.compare(rit->lang) != 0) {
-  //       wrong_chars =
-  //           min(min(it->location, rit->location), total_chars) - total_chars;
-  //     }
-
-  //     if (it->location > rit->location) {
-  //       rit++;
-  //     } else {
-  //       it++;
-  //     }
-  //   }
-
-  //   printf("tot %ld \n", total_chars);
-  // }
 
   pprint(fptr_t, locations, real_locations, show_accuracy, show_text);
 
