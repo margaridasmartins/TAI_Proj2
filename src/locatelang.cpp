@@ -18,7 +18,7 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
             const bool show_accuracy, const bool show_text) {
   // count total number of chars
   fseek(fptr_t, 0L, SEEK_END);
-  uint total_chars = ftell(fptr_t);
+  uint total_chars = ftell(fptr_t) - 3;
   fseek(fptr_t, 0L, SEEK_SET);  // rewind
 
   if (show_accuracy) {
@@ -42,27 +42,35 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
   auto next_it = locations.begin(), it = next_it++;
   auto next_rit = real_locations.begin(), rit = next_rit++;
   uint buffer, wrong_chars = 0, read_chars = 0;
-  bool update_lang = true;
+  string last_lang;
 
   do {
+    // printf("|%s|\n", it->lang.c_str());
+
     // print current language
-    if (show_text && update_lang) {
-      printf("%s<%s:%d>%s", pallet[it->lang].c_str(), it->lang.c_str(),
+    if (show_text && last_lang.compare(it->lang) != 0) {
+      string c = it->lang;
+      string s = pallet[c];
+      printf("%s<%s:%d>%s", s.c_str(), it->lang.c_str(),
              it->location, reset);
-      update_lang = false;
+      // printf("badd \n");
+      last_lang = it->lang;
+      // printf("good \n");
     }
 
     uint next_it_loc =
         (next_it != locations.end()) ? next_it->location : total_chars;
-    uint next_rit_loc =
-        (next_rit != real_locations.end()) ? next_rit->location : total_chars;
+
+    uint next_rit_loc = (show_accuracy && next_rit != real_locations.end())
+                            ? next_rit->location
+                            : total_chars;
 
     // calculate next buffer
     buffer = min(min(next_it_loc, next_rit_loc), total_chars) - read_chars;
     read_chars += buffer;
 
-    printf("%s %d %d %d %s \n", colours[3], next_it_loc, next_rit_loc, total_chars, reset);
-    // next_rit_loc), min(min(next_it_loc, next_rit_loc), total_chars));
+    // printf("%s %d %d %d %d %s \n", colours[3], buffer, next_it_loc, next_rit_loc,
+    //        total_chars, reset);
 
     // read buffer
     char stream[buffer + 1];
@@ -72,7 +80,7 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
     }
 
     // validate buffer
-    if (it->lang.compare(rit->lang) != 0) {
+    if (show_accuracy && last_lang.compare(rit->lang) != 0) {
       wrong_chars += buffer;
       if (show_text) printf("%s%s%s", wrong, stream, reset);
     } else {
@@ -80,15 +88,17 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
     }
 
     // advance inferior iterator
-    if (next_it_loc > next_rit_loc) {
+    if (show_accuracy && next_it_loc > next_rit_loc) {
       rit++;
-      if (next_rit != real_locations.end()) next_rit++;
+      next_rit++;
     } else {
       it++;
-      if (next_it != locations.end()) next_it++;
-      update_lang = true;
+      next_it++;
     }
-  } while (next_it != locations.end() || next_rit != real_locations.end());
+
+  } while (it != locations.end() &&
+           (!show_accuracy || rit != real_locations.end()));
+  printf("\n");
 
   // read rest of the file
   // char next_char = fgetc(fptr_t);
@@ -98,8 +108,9 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
   //   next_char = fgetc(fptr_t);
   // } while (next_char != EOF);
 
-  printf("\n%sAccuracy:%s %.2f %%\n", bold, reset,
-         (double)(read_chars - wrong_chars) / read_chars * 100);
+  if (show_accuracy)
+    printf("\n%sAccuracy:%s %.2f %%\n", bold, reset,
+           (double)(read_chars - wrong_chars) / read_chars * 100);
 }
 
 int main(int argc, char *argv[]) {
@@ -131,8 +142,8 @@ int main(int argc, char *argv[]) {
 
   char models_dir[100];
   char filename_t[100];
-  sprintf(models_dir, "%s", argv[1]);
-  sprintf(filename_t, "%s", argv[2]);
+  sprintf(models_dir, "../%s", argv[1]);
+  sprintf(filename_t, "../%s", argv[2]);
   float a = atof(argv[3]);
 
   FILE *fptr_t;
@@ -144,7 +155,8 @@ int main(int argc, char *argv[]) {
   struct dirent *entry;
   DIR *dp = opendir(models_dir);
   if (dp == NULL) {
-    fprintf(stderr, "ERR: Path \"%s\" does not exist or could not be read\n", models_dir);
+    fprintf(stderr, "ERR: Path \"%s\" does not exist or could not be read\n",
+            models_dir);
     return -1;
   }
 
@@ -218,6 +230,7 @@ int main(int argc, char *argv[]) {
   if (show_accuracy) {
     char first_line[1000];
     fgets(first_line, 1000, fptr_t);
+    rewind(fptr_t);
 
     int pos, pos2;
     uint loc;
@@ -232,8 +245,8 @@ int main(int argc, char *argv[]) {
       if ((pos2 = token.find(',')) != -1) {
         lang = token.substr(0, pos2);
         loc = atoi(token.substr(pos2 + 1).c_str());
-        if (loc < 1) {
-          printf("WARN: ignoring language \"%s\" with non positive location\n",
+        if (loc < 0) {
+          printf("WARN: ignoring language \"%s\" with negative location\n",
                  lang.c_str());
         } else {
           real_locations.push_back({loc, lang});
@@ -251,11 +264,12 @@ int main(int argc, char *argv[]) {
 
   printf("%sLocations detected:%s\n", bold, reset);
   if (k == 0) {
-    locations = locatelang(lang_fcm, fptr_t, a, b);
+    locations = locatelang(lang_fcm, fptr_t, a, b, show_accuracy);
   } else {
-    locations = locatelang_k(lang_k, fptr_t, a, k, b);
+    locations = locatelang_k(lang_k, fptr_t, a, k, b, show_accuracy);
   }
 
+  printf("\n");
   pprint(fptr_t, locations, real_locations, show_accuracy, show_text);
 
   closedir(dp);

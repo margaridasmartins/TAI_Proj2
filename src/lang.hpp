@@ -71,7 +71,8 @@ double get_numbits(FCM *fcm, FILE *fptr_t, uint k, float a, uint symbol_size) {
 }
 
 vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
-                                 float a, uint buffer_size) {
+                                 float a, uint buffer_size,
+                                 bool skip_first_line) {
   uint max_k = 5;
   char context[max_k];
 
@@ -81,6 +82,11 @@ vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
   uint buffer = 0;
   uint char_count = max_k;
   uint symbols_size = check_alphabet(fptr);
+
+  if (skip_first_line) {
+    char ignore[1000];
+    fgets(ignore, 1000, fptr);
+  }
 
   // first k letters
   fgets(context, max_k + 1, fptr);
@@ -114,9 +120,9 @@ vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
         uint loc = char_count - buffer;
         if (locations.empty()) {
           // first time
-          loc = 1;
+          loc = 0;
         }
-        printf("%s: %d\n", lang.c_str(), loc);
+        printf("  %s: %d\n", lang.c_str(), loc);
         locations.push_back({loc, lang});
 
         curr_lang = lang;
@@ -139,7 +145,8 @@ vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
 }
 
 vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr,
-                                   float a, uint k, uint buffer_size) {
+                                   float a, uint k, uint buffer_size,
+                                   bool skip_first_line) {
   char context[k];
 
   string curr_lang, last_lang, lang;
@@ -148,6 +155,11 @@ vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr,
   uint buffer = 0;
   uint char_count = k;
   uint symbols_size = check_alphabet(fptr);
+
+  if (skip_first_line) {
+    char ignore[1000];
+    fgets(ignore, 1000, fptr);
+  }
 
   // first k letters
   fgets(context, k + 1, fptr);
@@ -179,9 +191,9 @@ vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr,
         uint loc = char_count - buffer;
         if (locations.empty()) {
           // first time
-          loc = 1;
+          loc = 0;
         }
-        printf("%s: %d\n", lang.c_str(), loc);
+        printf("  %s: %d\n", lang.c_str(), loc);
         locations.push_back({loc, lang});
 
         curr_lang = lang;

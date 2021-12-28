@@ -1,4 +1,4 @@
-english,1;portuguese,136;spanish,301;slovak,368
+english,0;portuguese,135;spanish,300;slovak,367
 ... to support civil society, to
 support the interim transitional
 national council and Mr Jibril (we have
