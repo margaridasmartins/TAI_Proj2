@@ -16,6 +16,12 @@ const char *colours[] = {
 void pprint(FILE *fptr_t, const vector<lang_location> locations,
             const vector<lang_location> real_locations,
             const bool show_accuracy, const bool show_text) {
+
+  if (locations.empty()) {
+    printf("INFO: No locations to display\n");
+    return;
+  }
+
   // count total number of chars
   fseek(fptr_t, 0L, SEEK_END);
   uint total_chars = ftell(fptr_t);
@@ -35,7 +41,7 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
   unordered_map<string, string> pallet;
   for (auto v : locations) {
     if (pallet.find(v.lang) == pallet.end()) {
-      pallet[v.lang] = colours[c++ % 8];
+      pallet[v.lang] = colours[c++ % 7];
     }
   }
 
@@ -271,7 +277,3 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
-
-// 1 E 5 R 11 F 0 E 6 F 10 R
-
-//     EEEERRR

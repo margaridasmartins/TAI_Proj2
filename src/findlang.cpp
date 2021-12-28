@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
       "  context_size   The size of the context which translates into the order of the model\n"
       "  alpha          The value for the smoothing parameter\n"
       "Example:\n"
-      "  ./findlang ?? 2 0.5\n";
+      "  ./findlang models-tiny tests/por.txt 3 0.001\n";
 
   if (argc < 4) {
     printf("ERR: Incorrect number of arguments\n\n%s", help_text.c_str());
