@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
       fcm->train(fptr, a);
 
-      printf("Trained %s model with \t %f entropy\n", lang.c_str(), fcm->get_entropy(a));
+      printf("Trained model %-16s entropy: %f \n", lang.c_str(), fcm->get_entropy(a));
 
       double nbits = get_numbits(fcm, fptr_t, k, a, symbol_size);
 
@@ -78,17 +78,15 @@ int main(int argc, char *argv[]) {
 
   sort(langs.begin(), langs.end());
 
-  printf("Top nearest languages:\n");
+  printf("\nTop nearest languages:\n");
   uint top = 1;
   for (auto it = langs.begin(); it != langs.begin() + min(5, (int)langs.size() / 2); ++it) {
-    top++;
-    printf("  #%-2d  %16s: %f avg bits\n", top, it->second.c_str(), it->first);
+    printf("  #%-2d %16s: %f avg bits\n", top++, it->second.c_str(), it->first);
   }
   printf("  ...\n");
-  uint top = langs.size() - min(5, (int)langs.size() / 2);
+  top = langs.size() - min(5, (int)langs.size() / 2) + 1;
   for (auto it = langs.end() - min(5, (int)langs.size() / 2); it != langs.end(); ++it) {
-    top++;
-    printf("  #%-2d  %16s: %f avg bits\n", top, it->second.c_str(), it->first);
+    printf("  #%-2d %16s: %f avg bits\n", top++, it->second.c_str(), it->first);
   }
 
   return 0;
