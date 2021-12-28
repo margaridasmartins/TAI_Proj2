@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     printf("ERR: File \"%s\" not found\n", filename_t);
     exit(2);
   }
-  uint symbol_size= check_alphabet(fptr_t);
+  uint symbol_size = check_alphabet(fptr_t);
   struct dirent *entry;
   DIR *dp;
 

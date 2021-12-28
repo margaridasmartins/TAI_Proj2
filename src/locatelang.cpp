@@ -18,7 +18,7 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
             const bool show_accuracy, const bool show_text) {
   // count total number of chars
   fseek(fptr_t, 0L, SEEK_END);
-  uint total_chars = ftell(fptr_t) - 3;
+  uint total_chars = ftell(fptr_t);
   fseek(fptr_t, 0L, SEEK_SET);  // rewind
 
   if (show_accuracy) {
@@ -45,17 +45,11 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
   string last_lang;
 
   do {
-    // printf("|%s|\n", it->lang.c_str());
-
     // print current language
     if (show_text && last_lang.compare(it->lang) != 0) {
-      string c = it->lang;
-      string s = pallet[c];
-      printf("%s<%s:%d>%s", s.c_str(), it->lang.c_str(),
+      printf("%s<%s:%d>%s", pallet[it->lang].c_str(), it->lang.c_str(),
              it->location, reset);
-      // printf("badd \n");
       last_lang = it->lang;
-      // printf("good \n");
     }
 
     uint next_it_loc =
@@ -69,22 +63,26 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
     buffer = min(min(next_it_loc, next_rit_loc), total_chars) - read_chars;
     read_chars += buffer;
 
-    // printf("%s %d %d %d %d %s \n", colours[3], buffer, next_it_loc, next_rit_loc,
-    //        total_chars, reset);
-
     // read buffer
-    char stream[buffer + 1];
+    string stream = "";
     if (show_text) {
-      fread(stream, 1, buffer, fptr_t);
-      stream[buffer] = 0;
+      uint buffer2 = buffer;
+
+      for (uint i = 0; i < buffer2; i++) {
+        char c = fgetc(fptr_t);
+        if (c == EOF) break;
+        stream += c;
+        // have into consideration special chars
+        if ((c & 0xc0) == 0x80) buffer2++;
+      }
     }
 
     // validate buffer
     if (show_accuracy && last_lang.compare(rit->lang) != 0) {
       wrong_chars += buffer;
-      if (show_text) printf("%s%s%s", wrong, stream, reset);
+      if (show_text) printf("%s%s%s", wrong, stream.c_str(), reset);
     } else {
-      if (show_text) printf("%s", stream);
+      if (show_text) printf("%s", stream.c_str());
     }
 
     // advance inferior iterator
@@ -99,14 +97,6 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
   } while (it != locations.end() &&
            (!show_accuracy || rit != real_locations.end()));
   printf("\n");
-
-  // read rest of the file
-  // char next_char = fgetc(fptr_t);
-  // do {
-  //   read_chars++;
-  //   if (show_text) printf("%c", next_char);
-  //   next_char = fgetc(fptr_t);
-  // } while (next_char != EOF);
 
   if (show_accuracy)
     printf("\n%sAccuracy:%s %.2f %%\n", bold, reset,
@@ -208,8 +198,8 @@ int main(int argc, char *argv[]) {
       }
 
       if (k == 0) {
-        FCM *fcm1 = new FCM(1);
-        FCM *fcm2 = new FCM(2);
+        FCM *fcm1 = new FCM(3);
+        FCM *fcm2 = new FCM(4);
         FCM *fcm3 = new FCM(5);
         fcm1->train(fptr, a);
         fcm2->train(fptr, a);
