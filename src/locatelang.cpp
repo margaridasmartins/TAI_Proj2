@@ -63,17 +63,21 @@ void pprint(FILE *fptr_t, const vector<lang_location> locations,
     buffer = min(min(next_it_loc, next_rit_loc), total_chars) - read_chars;
     read_chars += buffer;
 
-    // read buffer
+    // read buffer with special chars into consideration
     string stream = "";
     if (show_text) {
-      uint buffer2 = buffer;
-
-      for (uint i = 0; i < buffer2; i++) {
-        char c = fgetc(fptr_t);
+      char c;
+      for (uint i = 0; i < buffer; i++) {
+        c = fgetc(fptr_t);
         if (c == EOF) break;
         stream += c;
-        // have into consideration special chars
-        if ((c & 0xc0) == 0x80) buffer2++;
+        if ((c & 0xe0) == 0xc0) {
+          stream += fgetc(fptr_t);
+        } else if ((c & 0xf0) == 0xe0) {
+          stream += fgetc(fptr_t) + fgetc(fptr_t);
+        } else if ((c & 0xf8) == 0xf0) {
+          stream += fgetc(fptr_t) + fgetc(fptr_t) + fgetc(fptr_t);
+        }
       }
     }
 

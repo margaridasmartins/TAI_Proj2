@@ -97,9 +97,9 @@ vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
     double min_bits = 10000;
     for (auto v : lang_list) {
       double bits =
-          .4 * v.fcm3->letter_entropy(context, next_char, a, symbols_size) +
-          .4 * v.fcm2->letter_entropy((context + 3), next_char, a, symbols_size) +
-          .2 * v.fcm1->letter_entropy((context + 4), next_char, a, symbols_size);
+          .6 * v.fcm3->letter_entropy(context, next_char, a, symbols_size) +
+          .2 * v.fcm2->letter_entropy((context + 1), next_char, a, symbols_size) +
+          .2 * v.fcm1->letter_entropy((context + 2), next_char, a, symbols_size);
       if (bits < min_bits) {
         min_bits = bits;
         lang = v.lang;
@@ -129,7 +129,10 @@ vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
         buffer = 0;
       }
     }
-    char_count++;
+    // ignore continuation chars
+    if ((next_char & 0xc0) != 0xc0) {
+      char_count++;
+    }
 
     // slide one
     for (uint i = 0; i < max_k - 1; i++) {
@@ -200,7 +203,10 @@ vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr,
         buffer = 0;
       }
     }
-    char_count++;
+    // ignore continuation chars
+    if ((next_char & 0xc0) != 0xc0) {
+      char_count++;
+    }
 
     // slide one
     for (uint i = 0; i < k - 1; i++) {
