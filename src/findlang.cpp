@@ -79,8 +79,8 @@ int main(int argc, char *argv[]) {
   sort(langs.begin(), langs.end());
 
   printf("Top 5 nearest languages:\n");
-  for (auto it = langs.begin(); it != langs.begin() + 5; ++it) {
-    printf("%20s: \t %f avg bits\n", it->second.c_str(), it->first);
+  for (auto it = langs.begin(); it != langs.begin() + 15; ++it) {
+    printf("%16s: %f avg bits\n", it->second.c_str(), it->first);
   }
 
   return 0;

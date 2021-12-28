@@ -1,70 +1,139 @@
+#include <bits/stdc++.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include "fcm.hpp"
 #include "lang.hpp"
 
-void pprint(FILE *fptr_t, const vector<lang_location> locations) {
-  rewind(fptr_t);
+const char *reset = "\u001b[0m";
+const char *bold = "\u001b[1m";
+const char *wrong = "\u001b[31m";
+const char *colours[] = {
+    "\u001b[33;1m", "\u001b[34;1m", "\u001b[35;1m", "\u001b[36;1m",
+    "\u001b[32;1m", "\u001b[31;1m", "\u001b[37;1m",
+};
 
-  if (locations.empty()) {
-    // no specific language found
-    printf("\u001b[34;1m<unknown:\u001b[0m");
+void pprint(FILE *fptr_t, const vector<lang_location> locations,
+            const vector<lang_location> real_locations,
+            const bool show_accuracy, const bool show_text) {
+  // count total number of chars
+  fseek(fptr_t, 0L, SEEK_END);
+  uint total_chars = ftell(fptr_t);
+  fseek(fptr_t, 0L, SEEK_SET);  // rewind
+
+  if (show_accuracy) {
+    // skip first line
+    string s;
+    char ignore[1000];
+    fgets(ignore, 1000, fptr_t);
+    s = ignore;
+    total_chars -= s.length();
   }
 
-  for (uint i = 0; i < locations.size(); i++) {
-    auto curr = locations[i];
-    string lang = curr.lang;
-
-    printf("\u001b[34;1m<%s:\u001b[0m", lang.c_str());
-
-    if (i + 1 < locations.size()) {
-      uint buffer = locations[i + 1].location - curr.location;
-      char stream[buffer + 1];
-      fread(stream, 1, buffer, fptr_t);
-      stream[buffer] = 0;
-
-      printf("%s", stream);
-      printf("\u001b[34;1m>\u001b[0m");
+  // language colour pallet
+  uint c = 0;
+  unordered_map<string, string> pallet;
+  for (auto v : locations) {
+    if (pallet.find(v.lang) == pallet.end()) {
+      pallet[v.lang] = colours[c++ % 8];
     }
   }
-  // read rest of the file
-  char next_char = fgetc(fptr_t);
-  do {
-    printf("%c", next_char);
-    next_char = fgetc(fptr_t);
-  } while (next_char != EOF);
 
-  printf("\u001b[34;1m>\u001b[0m\n");
+  auto next_it = locations.begin(), it = next_it++;
+  auto next_rit = real_locations.begin(), rit = next_rit++;
+  uint buffer, wrong_chars = 0, read_chars = 0;
+  bool update_lang = true;
+
+  do {
+    // print current language
+    if (show_text && update_lang) {
+      printf("%s<%s:%d>%s", pallet[it->lang].c_str(), it->lang.c_str(),
+             it->location, reset);
+      update_lang = false;
+    }
+
+    uint next_it_loc =
+        (next_it != locations.end()) ? next_it->location : total_chars;
+    uint next_rit_loc =
+        (next_rit != real_locations.end()) ? next_rit->location : total_chars;
+
+    // calculate next buffer
+    buffer = min(min(next_it_loc, next_rit_loc), total_chars) - read_chars;
+    read_chars += buffer;
+
+    printf("%s %d %d %d %s \n", colours[3], next_it_loc, next_rit_loc, total_chars, reset);
+    // next_rit_loc), min(min(next_it_loc, next_rit_loc), total_chars));
+
+    // read buffer
+    char stream[buffer + 1];
+    if (show_text) {
+      fread(stream, 1, buffer, fptr_t);
+      stream[buffer] = 0;
+    }
+
+    // validate buffer
+    if (it->lang.compare(rit->lang) != 0) {
+      wrong_chars += buffer;
+      if (show_text) printf("%s%s%s", wrong, stream, reset);
+    } else {
+      if (show_text) printf("%s", stream);
+    }
+
+    // advance inferior iterator
+    if (next_it_loc > next_rit_loc) {
+      rit++;
+      if (next_rit != real_locations.end()) next_rit++;
+    } else {
+      it++;
+      if (next_it != locations.end()) next_it++;
+      update_lang = true;
+    }
+  } while (next_it != locations.end() || next_rit != real_locations.end());
+
+  // read rest of the file
+  // char next_char = fgetc(fptr_t);
+  // do {
+  //   read_chars++;
+  //   if (show_text) printf("%c", next_char);
+  //   next_char = fgetc(fptr_t);
+  // } while (next_char != EOF);
+
+  printf("\n%sAccuracy:%s %.2f %%\n", bold, reset,
+         (double)(read_chars - wrong_chars) / read_chars * 100);
 }
 
 int main(int argc, char *argv[]) {
   string help_text =
       "Usage:\n"
-      "  ./locatelang models_dir filename_t context_size alpha \n"
+      "  ./locatelang models_dir filename_t alpha [-h] [-b N] [-k N] "
+      "[--accuracy] [--print]\n"
       "Required:\n"
       "  models_dir       The name of the directory with the language files\n"
       "  filename_t       The name of the file with the text under analysis\n"
-      "order of the model\n"
-      "  alpha          The value for the smoothing parameter\n"
+      "  alpha            The value for the smoothing parameter\n"
       "Options:\n"
-      "  -b           The value of buffer size for switching to another "
-      "language\n"
-      "  -k              Only use one context size "
+      "  -h   | --help            Show this message and exit\n"
+      "  -b N | --buffer N        The value of buffer size for switching to "
+      "another language (default: 10)\n"
+      "  -k N | --context-size N  Use a specific context size instead of a "
+      "default combination of 3 contexts\n"
+      "       | --print           Show the text under analysis whith labeled "
+      "with the languages detected\n"
+      "       | --accuracy        Read the first line as real locations and "
+      "calculate the accuracy\n"
       "Example:\n"
-      "  ./locatelang ?? ?? 2 0.5\n";
+      "  ./locatelang ../models-tiny/ ../tests/locatelang.txt 0.001\n";
 
   if (argc < 4) {
     printf("ERR: Incorrect number of arguments\n\n%s", help_text.c_str());
     exit(1);
   }
 
-  uint k = 0;
-  float a;
   char models_dir[100];
   char filename_t[100];
   sprintf(models_dir, "%s", argv[1]);
   sprintf(filename_t, "%s", argv[2]);
-  a = atof(argv[3]);
+  float a = atof(argv[3]);
 
   FILE *fptr_t;
   if ((fptr_t = fopen(filename_t, "r")) == NULL) {
@@ -73,29 +142,32 @@ int main(int argc, char *argv[]) {
   }
 
   struct dirent *entry;
-  DIR *dp;
-  dp = opendir(models_dir);
+  DIR *dp = opendir(models_dir);
   if (dp == NULL) {
     perror("opendir: Path does not exist or could not be read.");
     return -1;
   }
 
-  string lang;
-  string s;
+  string lang, s;
   list<lang_FCM> lang_fcm;
   list<lang_k> lang_k;
 
-  uint b = 10;  // default buffer
+  uint k = 0, b = 10;  // default values
+  int show_text = 0, show_accuracy = 0;
   int option, option_index = 0;
   static struct option long_options[] = {
       {"buffer", required_argument, 0, 'b'},
       {"help", no_argument, 0, 'h'},
       {"context_size", required_argument, 0, 'k'},
+      {"print", no_argument, &show_text, 1},
+      {"accuracy", no_argument, &show_accuracy, 1},
       {0, 0, 0, 0}};
 
-  while ((option = getopt_long(argc, argv, "bhk", long_options,
+  while ((option = getopt_long(argc, argv, "bkh", long_options,
                                &option_index)) != -1) {
     switch (option) {
+      case 0:
+        break;
       case 'b':
         b = atoi(argv[optind]);
         break;
@@ -141,18 +213,77 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  vector<lang_location> locations;
+  vector<lang_location> locations, real_locations;
 
+  if (show_accuracy) {
+    char first_line[1000];
+    fgets(first_line, 1000, fptr_t);
+
+    int pos, pos2;
+    uint loc;
+    string s, token, lang;
+    s = first_line;
+
+    do {
+      pos = s.find(';');
+      token = s.substr(0, pos);
+      s.erase(0, pos + 1);
+
+      if ((pos2 = token.find(',')) != -1) {
+        lang = token.substr(0, pos2);
+        loc = atoi(token.substr(pos2 + 1).c_str());
+        if (loc < 1) {
+          printf("WARN: ignoring language \"%s\" with non positive location\n",
+                 lang.c_str());
+        } else {
+          real_locations.push_back({loc, lang});
+        }
+      }
+    } while (pos != -1);
+
+    sort(real_locations.begin(), real_locations.end(), compare_lang_location);
+
+    printf("%sReal locations received:%s\n", bold, reset);
+    for (auto v : real_locations) {
+      printf("  %s: %d\n", v.lang.c_str(), v.location);
+    }
+  }
+
+  printf("%sLocations detected:%s\n", bold, reset);
   if (k == 0) {
     locations = locatelang(lang_fcm, fptr_t, a, b);
   } else {
     locations = locatelang_k(lang_k, fptr_t, a, k, b);
   }
 
-  pprint(fptr_t, locations);
+  // if (show_accuracy) {
+  //   uint total_chars = ftell(fptr_t) - 3, wrong_chars = 0;
+  //   auto it = locations.rbegin(), rit = real_locations.rbegin();
+
+  //   while (it != locations.rend() || rit != real_locations.rend()) {
+  //     if (it->lang.compare(rit->lang) != 0) {
+  //       wrong_chars =
+  //           min(min(it->location, rit->location), total_chars) - total_chars;
+  //     }
+
+  //     if (it->location > rit->location) {
+  //       rit++;
+  //     } else {
+  //       it++;
+  //     }
+  //   }
+
+  //   printf("tot %ld \n", total_chars);
+  // }
+
+  pprint(fptr_t, locations, real_locations, show_accuracy, show_text);
 
   closedir(dp);
   fclose(fptr_t);
 
   return 0;
 }
+
+// 1 E 5 R 11 F 0 E 6 F 10 R
+
+//     EEEERRR

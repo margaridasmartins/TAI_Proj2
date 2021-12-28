@@ -26,6 +26,10 @@ struct lang_location {
   string lang;
 };
 
+bool compare_lang_location(const lang_location &a, const lang_location &b) {
+  return a.location < b.location;
+}
+
 uint check_alphabet(FILE *fptr) {
   set<char> alpha;
   char c = fgetc(fptr);
@@ -112,9 +116,9 @@ vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
       uint loc = char_count - buffer;
       if (locations.empty()) {
         // first time
-        loc = 0;
+        loc = 1;
       }
-      printf("%s: %d\n", lang.c_str(), loc);
+      printf("  %s: %d\n", lang.c_str(), loc);
       locations.push_back({loc, lang});
 
       curr_lang = lang;
@@ -135,8 +139,8 @@ vector<lang_location> locatelang(const list<lang_FCM> lang_list, FILE *fptr,
   return locations;
 }
 
-vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr, float a,
-                                   uint k, uint buffer_size) {
+vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr,
+                                   float a, uint k, uint buffer_size) {
   char context[k];
 
   double min_bits, bits;
@@ -176,9 +180,9 @@ vector<lang_location> locatelang_k(const list<lang_k> lang_list, FILE *fptr, flo
       uint loc = char_count - buffer;
       if (locations.empty()) {
         // first time
-        loc = 0;
+        loc = 1;
       }
-      printf("%s: %d\n", lang.c_str(), loc);
+      printf("  %s: %d\n", lang.c_str(), loc);
       locations.push_back({loc, lang});
 
       curr_lang = lang;
